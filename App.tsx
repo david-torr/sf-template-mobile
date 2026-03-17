@@ -1,6 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import {
+  FlatList,
   Image,
   ScrollView,
   StyleSheet,
@@ -119,8 +120,106 @@ function PlaceholderScreen({ name }: { name: string }) {
   )
 }
 
-function NewsScreen()     { return <PlaceholderScreen name="News" /> }
-function FixturesScreen() { return <PlaceholderScreen name="Fixtures" /> }
+// ── News Screen ───────────────────────────────────────────────────────────────
+
+function NewsScreen() {
+  return (
+    <View style={styles.flex}>
+      <FlatList
+        data={mockNews}
+        keyExtractor={item => item.id}
+        ListHeaderComponent={
+          <View style={styles.screenHeader}>
+            <Text style={styles.screenHeaderTitle}>News</Text>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.newsListItem} activeOpacity={0.75}>
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.newsListImage}
+              resizeMode="cover"
+            />
+            <View style={styles.newsListContent}>
+              <View style={styles.newsListPill}>
+                <Text style={styles.newsListPillText}>{item.category}</Text>
+              </View>
+              <Text style={styles.newsListTitle} numberOfLines={2}>{item.title}</Text>
+              <Text style={styles.newsListDate}>{item.date}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+      />
+    </View>
+  )
+}
+
+// ── Fixtures Screen ───────────────────────────────────────────────────────────
+
+function FixtureRow({ fixture }: { fixture: (typeof mockFixtures)[number] }) {
+  const isLive   = fixture.status === 'live'
+  const isResult = fixture.status === 'result'
+
+  const centreText = isResult || isLive
+    ? `${fixture.homeScore} – ${fixture.awayScore}`
+    : fixture.time
+
+  return (
+    <View style={[styles.fixtureRow, isLive && styles.fixtureRowLive]}>
+      {/* Status badge + competition */}
+      <View style={styles.fixtureMeta}>
+        {isLive && (
+          <View style={styles.liveBadge}>
+            <Text style={styles.liveBadgeText}>LIVE</Text>
+          </View>
+        )}
+        {isResult && (
+          <View style={styles.ftBadge}>
+            <Text style={styles.ftBadgeText}>FT</Text>
+          </View>
+        )}
+        <Text style={styles.fixtureCompetition}>{fixture.competition}</Text>
+      </View>
+      {/* Teams + score/time */}
+      <View style={styles.fixtureTeamsRow}>
+        <Text style={[styles.fixtureTeam, styles.textRight]} numberOfLines={1}>
+          {fixture.homeTeam}
+        </Text>
+        <View style={styles.fixtureCentre}>
+          <Text style={[
+            styles.fixtureCentreText,
+            isResult && styles.fixtureCentreResult,
+            isLive   && styles.fixtureCentreLive,
+          ]}>
+            {centreText}
+          </Text>
+        </View>
+        <Text style={[styles.fixtureTeam, styles.textLeft]} numberOfLines={1}>
+          {fixture.awayTeam}
+        </Text>
+      </View>
+    </View>
+  )
+}
+
+function FixturesScreen() {
+  return (
+    <View style={styles.flex}>
+      <FlatList
+        data={mockFixtures}
+        keyExtractor={item => item.id}
+        ListHeaderComponent={
+          <View style={styles.screenHeader}>
+            <Text style={styles.screenHeaderTitle}>Fixtures &amp; Results</Text>
+          </View>
+        }
+        renderItem={({ item }) => <FixtureRow fixture={item} />}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+      />
+    </View>
+  )
+}
 function SquadScreen()    { return <PlaceholderScreen name="Squad" /> }
 function MoreScreen()     { return <PlaceholderScreen name="More" /> }
 
@@ -317,6 +416,136 @@ const styles = StyleSheet.create({
   },
   tabLabel: { fontSize: 11 },
   icon:     { fontSize: 20 },
+
+  // Shared screen header
+  screenHeader: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  screenHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: colors.border,
+  },
+
+  // News list
+  newsListItem: {
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+  },
+  newsListImage: {
+    width: 120,
+    height: 90,
+    borderRadius: radius.sm,
+  },
+  newsListContent: {
+    flex: 1,
+    paddingLeft: spacing[3],
+    justifyContent: 'center',
+  },
+  newsListPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  newsListPillText: {
+    fontSize: 10,
+    color: colors['text-muted'],
+  },
+  newsListTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: spacing[1],
+  },
+  newsListDate: {
+    fontSize: 12,
+    color: colors['text-muted'],
+    marginTop: spacing[1],
+  },
+
+  // Fixtures
+  fixtureRow: {
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+  },
+  fixtureRowLive: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#DC2626',
+  },
+  fixtureMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing[2],
+    gap: spacing[2],
+  },
+  fixtureCompetition: {
+    fontSize: 11,
+    color: colors['text-muted'],
+  },
+  liveBadge: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  liveBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  ftBadge: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  ftBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors['text-muted'],
+  },
+  fixtureTeamsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fixtureTeam: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  fixtureCentre: {
+    paddingHorizontal: spacing[3],
+    alignItems: 'center',
+  },
+  fixtureCentreText: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.text,
+  },
+  fixtureCentreResult: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.accent,
+  },
+  fixtureCentreLive: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
 
   // Placeholder screens
   placeholderScreen: {
