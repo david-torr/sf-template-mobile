@@ -1,5 +1,6 @@
 import type { Article } from '../constants/mock/news'
 import type { Fixture } from '../constants/mock/fixtures'
+import type { Player } from '../constants/mock/players'
 
 const STRAPI_URL   = process.env.EXPO_PUBLIC_STRAPI_URL
 const STRAPI_TOKEN = process.env.EXPO_PUBLIC_STRAPI_API_TOKEN
@@ -24,65 +25,52 @@ async function fetchStrapi<T>(endpoint: string): Promise<T | null> {
   }
 }
 
-// ── Strapi v5 response shapes ─────────────────────────────────────────────────
-// Strapi v5 returns flat objects (no nested `attributes`).
-// Adjust field names here to match your actual content-type field names.
-
-type StrapiArticle = {
-  id: number | string
-  title: string
-  excerpt?: string
-  category?: string
-  publishedAt?: string
-  cover?: { url: string } | null
-}
-
-type StrapiFixture = {
-  id: number | string
-  homeTeam: string
-  awayTeam: string
-  homeScore?: number | null
-  awayScore?: number | null
-  date: string
-  time: string
-  competition: string
-  status: 'upcoming' | 'live' | 'result'
-}
-
 // ── Public data fetchers ──────────────────────────────────────────────────────
-// Each returns a typed array on success, or null so callers can fall back to
-// mock data without showing an error to the user.
+// Strapi v4 wraps all field values inside an `attributes` object.
+// Media relations are nested: field.data.attributes.url
 
 export async function getArticles(): Promise<Article[] | null> {
-  const data = await fetchStrapi<StrapiArticle[]>('articles?populate=*')
+  const data = await fetchStrapi<any[]>('articles?populate=*')
   if (!data?.length) return null
-  return data.map(item => ({
+  return data.map((item: any) => ({
     id:       String(item.id),
-    title:    item.title ?? '',
-    excerpt:  item.excerpt ?? '',
-    category: item.category ?? '',
-    date:     item.publishedAt ? item.publishedAt.slice(0, 10) : '',
-    imageUrl: item.cover?.url ?? '',
+    title:    item.attributes.title,
+    excerpt:  item.attributes.excerpt ?? '',
+    category: item.attributes.category ?? 'NEWS',
+    date:     item.attributes.publishedAt?.split('T')[0] ?? '',
+    imageUrl: item.attributes.cover?.data?.attributes?.url
+      ? `${STRAPI_URL}${item.attributes.cover.data.attributes.url}`
+      : `https://picsum.photos/seed/${item.id}/800/450`,
   }))
 }
 
 export async function getFixtures(): Promise<Fixture[] | null> {
-  const data = await fetchStrapi<StrapiFixture[]>('fixtures?populate=*')
+  const data = await fetchStrapi<any[]>('fixtures?populate=*')
   if (!data?.length) return null
-  return data.map(item => ({
+  return data.map((item: any) => ({
     id:          String(item.id),
-    homeTeam:    item.homeTeam,
-    awayTeam:    item.awayTeam,
-    homeScore:   item.homeScore ?? null,
-    awayScore:   item.awayScore ?? null,
-    date:        item.date,
-    time:        item.time,
-    competition: item.competition,
-    status:      item.status,
+    homeTeam:    item.attributes.homeTeam,
+    awayTeam:    item.attributes.awayTeam,
+    homeScore:   item.attributes.homeScore ?? null,
+    awayScore:   item.attributes.awayScore ?? null,
+    date:        item.attributes.date ?? '',
+    time:        item.attributes.time ?? '',
+    competition: item.attributes.competition ?? '',
+    status:      item.attributes.status ?? 'upcoming',
   }))
 }
 
-export async function getPlayers(): Promise<null> {
-  // Placeholder — wire up when a Players content-type exists in Strapi
-  return null
+export async function getPlayers(): Promise<Player[] | null> {
+  const data = await fetchStrapi<any[]>('players?populate=*')
+  if (!data?.length) return null
+  return data.map((item: any) => ({
+    id:          String(item.id),
+    name:        item.attributes.name,
+    number:      item.attributes.number ?? 0,
+    position:    item.attributes.position ?? 'MID',
+    nationality: item.attributes.nationality ?? '',
+    imageUrl:    item.attributes.photo?.data?.attributes?.url
+      ? `${STRAPI_URL}${item.attributes.photo.data.attributes.url}`
+      : `https://picsum.photos/seed/player${item.id}/200/200`,
+  }))
 }
