@@ -39,8 +39,8 @@ function HomeScreen() {
   useEffect(() => {
     async function load() {
       const [arts, fixs] = await Promise.all([getArticles(), getFixtures()])
-      if (arts?.length)  setArticles(arts)
-      if (fixs?.length)  setFixtures(fixs)
+      if (arts !== null) setArticles(arts)
+      if (fixs !== null) setFixtures(fixs)
       setIsLoading(false)
     }
     load()
@@ -149,7 +149,7 @@ function NewsScreen() {
 
   useEffect(() => {
     getArticles().then(data => {
-      if (data?.length) setArticles(data)
+      if (data !== null) setArticles(data)
       setIsLoading(false)
     })
   }, [])
@@ -242,7 +242,7 @@ function FixturesScreen() {
 
   useEffect(() => {
     getFixtures().then(data => {
-      if (data?.length) setFixtures(data)
+      if (data !== null) setFixtures(data)
       setIsLoading(false)
     })
   }, [])
