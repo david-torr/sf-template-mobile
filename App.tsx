@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   ScrollView,
@@ -12,9 +14,10 @@ import {
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { colors, radius, spacing } from './lib/tokens'
-import { mockNews } from './constants/mock/news'
-import { mockFixtures } from './constants/mock/fixtures'
+import { mockNews, type Article } from './constants/mock/news'
+import { mockFixtures, type Fixture } from './constants/mock/fixtures'
 import { mockPlayers, type Position } from './constants/mock/players'
+import { getArticles, getFixtures } from './lib/strapi'
 
 // ── Shadow helper (cross-platform) ───────────────────────────────────────────
 
@@ -29,7 +32,23 @@ const cardShadow = {
 // ── Home Screen ───────────────────────────────────────────────────────────────
 
 function HomeScreen() {
-  const results = mockFixtures.filter(f => f.status === 'result')
+  const [articles, setArticles] = useState<Article[]>(mockNews)
+  const [fixtures, setFixtures] = useState<Fixture[]>(mockFixtures)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const [arts, fixs] = await Promise.all([getArticles(), getFixtures()])
+      if (arts?.length)  setArticles(arts)
+      if (fixs?.length)  setFixtures(fixs)
+      setIsLoading(false)
+    }
+    load()
+  }, [])
+
+  if (isLoading) return <ActivityIndicator style={styles.loader} color={colors.accent} size="large" />
+
+  const results = fixtures.filter(f => f.status === 'result')
 
   return (
     <View style={styles.flex}>
@@ -66,7 +85,7 @@ function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.newsScroll}
           >
-            {mockNews.map(item => (
+            {articles.map(item => (
               <TouchableOpacity key={item.id} style={styles.newsCard} activeOpacity={0.85}>
                 <Image
                   source={{ uri: item.imageUrl }}
@@ -125,10 +144,22 @@ function PlaceholderScreen({ name }: { name: string }) {
 // ── News Screen ───────────────────────────────────────────────────────────────
 
 function NewsScreen() {
+  const [articles, setArticles] = useState<Article[]>(mockNews)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    getArticles().then(data => {
+      if (data?.length) setArticles(data)
+      setIsLoading(false)
+    })
+  }, [])
+
+  if (isLoading) return <ActivityIndicator style={styles.loader} color={colors.accent} size="large" />
+
   return (
     <View style={styles.flex}>
       <FlatList
-        data={mockNews}
+        data={articles}
         keyExtractor={item => item.id}
         ListHeaderComponent={
           <View style={styles.screenHeader}>
@@ -206,10 +237,22 @@ function FixtureRow({ fixture }: { fixture: (typeof mockFixtures)[number] }) {
 }
 
 function FixturesScreen() {
+  const [fixtures, setFixtures] = useState<Fixture[]>(mockFixtures)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    getFixtures().then(data => {
+      if (data?.length) setFixtures(data)
+      setIsLoading(false)
+    })
+  }, [])
+
+  if (isLoading) return <ActivityIndicator style={styles.loader} color={colors.accent} size="large" />
+
   return (
     <View style={styles.flex}>
       <FlatList
-        data={mockFixtures}
+        data={fixtures}
         keyExtractor={item => item.id}
         ListHeaderComponent={
           <View style={styles.screenHeader}>
@@ -311,6 +354,7 @@ export default function App() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   scrollContent: { paddingBottom: spacing[6] },
+  loader: { flex: 1, backgroundColor: colors.background },
 
   // Header bar
   header: {
