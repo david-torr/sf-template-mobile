@@ -4,6 +4,7 @@ import {
   FlatList,
   Image,
   ScrollView,
+  SectionList,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,6 +14,7 @@ import { StatusBar } from 'expo-status-bar'
 import { colors, radius, spacing } from './lib/tokens'
 import { mockNews } from './constants/mock/news'
 import { mockFixtures } from './constants/mock/fixtures'
+import { mockPlayers, type Position } from './constants/mock/players'
 
 // ── Shadow helper (cross-platform) ───────────────────────────────────────────
 
@@ -220,7 +222,61 @@ function FixturesScreen() {
     </View>
   )
 }
-function SquadScreen()    { return <PlaceholderScreen name="Squad" /> }
+// ── Squad Screen ──────────────────────────────────────────────────────────────
+
+const POSITION_ORDER: Position[] = ['GK', 'DEF', 'MID', 'FWD']
+const POSITION_LABEL: Record<Position, string> = {
+  GK:  'Goalkeepers',
+  DEF: 'Defenders',
+  MID: 'Midfielders',
+  FWD: 'Forwards',
+}
+
+const squadSections = POSITION_ORDER
+  .map(pos => ({
+    title: pos,
+    data: mockPlayers.filter(p => p.position === pos),
+  }))
+  .filter(s => s.data.length > 0)
+
+function SquadScreen() {
+  return (
+    <View style={styles.flex}>
+      <SectionList
+        sections={squadSections}
+        keyExtractor={item => item.id}
+        ListHeaderComponent={
+          <View style={styles.screenHeader}>
+            <Text style={styles.screenHeaderTitle}>Squad</Text>
+          </View>
+        }
+        renderSectionHeader={({ section }) => (
+          <View style={styles.squadGroupHeader}>
+            <Text style={styles.squadGroupLabel}>
+              {POSITION_LABEL[section.title as Position]}
+            </Text>
+          </View>
+        )}
+        renderItem={({ item }) => (
+          <View style={styles.playerRow}>
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.playerAvatar}
+              resizeMode="cover"
+            />
+            <View style={styles.playerInfo}>
+              <Text style={styles.playerName}>{item.name}</Text>
+              <Text style={styles.playerNationality}>{item.nationality}</Text>
+            </View>
+            <Text style={styles.playerNumber}>{item.number}</Text>
+          </View>
+        )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        stickySectionHeadersEnabled={false}
+      />
+    </View>
+  )
+}
 function MoreScreen()     { return <PlaceholderScreen name="More" /> }
 
 // ── Navigator ─────────────────────────────────────────────────────────────────
@@ -545,6 +601,51 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#DC2626',
+  },
+
+  // Squad
+  squadGroupHeader: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: 10,
+    backgroundColor: colors.surface,
+  },
+  squadGroupLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors['text-muted'],
+    letterSpacing: 1.5,
+  },
+  playerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+    backgroundColor: colors.background,
+  },
+  playerAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.surface,
+  },
+  playerInfo: {
+    flex: 1,
+    paddingLeft: spacing[3],
+  },
+  playerName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  playerNationality: {
+    fontSize: 13,
+    color: colors['text-muted'],
+    marginTop: 2,
+  },
+  playerNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.accent,
   },
 
   // Placeholder screens
